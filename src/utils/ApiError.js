@@ -4,15 +4,15 @@ class ApiError extends Error {
     statusCode, // IT IS A STATUS CODE OF THE ERROR
     message = "something went wrong", // IT IS A MESSAGE OF THE ERROR
     errors = [], // IT IS A ARRAY OF ERRORS WHICH IS USED TO HANDLE ERRORS
-    statck = "" //IT IS A STACK OF THE ERROR WHICH IS USED TO HANDLE ERRORS
+    stack = "" //IT IS A STACK OF THE ERROR WHICH IS USED TO HANDLE ERRORS
   ) {
     super(message);
     this.message = message;
     this.statusCode = statusCode;
     this.data = null;
     this.errors = errors;
-    if (statck) {
-      this.stack = statck;
+    if (stack) {
+      this.stack = stack;
     } else {
       Error.captureStackTrace(this, this.constructor);
     }
