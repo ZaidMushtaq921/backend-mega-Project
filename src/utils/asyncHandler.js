@@ -1,13 +1,13 @@
 // Asynchronous handler function that takes in a requestHandler as an argument
 const asyncHandler = (requestHandlar) => {
   // an arrow function that takes in req, res, and next as arguments
-  (req, res, next) => {
+   return (req, res, next) => {
     // Use Promise.resolve to convert the requestHandler into a promise
     Promise.resolve(requestHandlar(req, res, next))
 
       // Use catch to handle any errors that may occur
       .catch((err) => {
-        // Call the next function with the error as an argument
+        // Call the next function with the error as an argument 
         next(err);
       });
   };
