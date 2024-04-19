@@ -70,12 +70,12 @@ const userSchema = new Schema(
 );
 
 // Pre-save middleware to hash the password before saving
-userSchema.pre("save", function (next) {
+userSchema.pre("save", async function (next) {
   // Check if the password is modified
   if (!this.isModified("password")) return next();
 
   // Hash the password and store it in the password field
-  this.password = bcrypt.hash(this.password, 10);
+  this.password = await bcrypt.hash(this.password, 10);
   next();
 });
 
@@ -114,4 +114,4 @@ userSchema.methods.generateRefreshToken = function () {
 };
 
 // Export the User model
-const User = mongoose.model("User", userSchema);
+export const User = mongoose.model("User", userSchema);
