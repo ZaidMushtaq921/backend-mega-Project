@@ -42,7 +42,7 @@ const userRegister = asyncHandler(async (req, res) => {
     throw new ApiError(400, "AVATAR IS REQUIRED");
   }
 
-  //TODO: UPLOAD  USER OBJECT ON CLOUDINARY
+  //TODO: UPLOAD  FILES ON CLOUDINARY
   const avatar = await uploadOnCloudinary(avatarLocalPath);
   const coverImage = await uploadOnCloudinary(coverImageLocalPath);
   if (!avatar) {

@@ -18,7 +18,7 @@ cloudinary.config({
 const uploadOnCloudinary = (localFilePath) => {
   try {
     // Return null if the localFilePath is not provided
-    if(!localFilePath)return null
+    if (!localFilePath) return null;
 
     // Upload the file to Cloudinary
     const result = cloudinary.uploader.upload(localFilePath, {
@@ -26,7 +26,8 @@ const uploadOnCloudinary = (localFilePath) => {
     });
 
     // Log the success message and the uploaded file's URL
-    console.log("file uploaded sucessfully and url is ", result.url);
+    // console.log("file uploaded sucessfully and url is ", result.url);
+    fs.unlinkSync(localFilePath);
 
     // Return the result object
     return result;
@@ -43,4 +44,4 @@ const uploadOnCloudinary = (localFilePath) => {
 };
 
 // Export the uploadOnCloudinary function
-export {uploadOnCloudinary}
+export { uploadOnCloudinary };
