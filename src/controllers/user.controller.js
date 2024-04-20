@@ -72,4 +72,102 @@ const userRegister = asyncHandler(async (req, res) => {
     .status(201)
     .json(new ApiResponse(200, createdUser, "user created sucessfully"));
 });
-export { userRegister };
+
+const loginUser = asyncHandler(async (req, res) => {
+  /*TODO: 
+  1. GET USERNAME , EMAIL AND PASSWORD FROM REQUEST BODY
+  2. CHECK EMAIL AND PASSWORD IS VALID OR NOT
+  3. FIND USER IN DB USING EMAIL
+  4. CHECK PASSWORD IS CORRECT OR NOT
+  5. GENERATE ACCESS TOKEN AND REFRESH TOKEN
+  6. SEND AS COOKIE TO USER
+  7. SEND RESPONSE TO USER
+  */
+  //TODO: METHOD TO GENERATE ACCESS TOKEN AND REFRESH TOKEN
+  const generateAcessAndRefreshToken = async (userId) => {
+    try {
+      const user = await User.findById(userId);
+      const acessToken = user.generateAccessToken();
+      const refreshToken = user.generateRefreshToken();
+
+      user.refreshToken = refreshToken; // it will save in db
+      user.save({ validationBeforeSave: false }); // it will not validate the data before saving
+    } catch (error) {
+      throw new ApiError(500, "INTERNAL SERVER ERROR: TOKEN ARE NOT GENERATED");
+    }
+
+    return { acessToken, refreshToken };
+  };
+
+  //TODO:  GET USERNAME , EMAIL AND PASSWORD FROM REQUEST BODY
+  const { username, email, password } = req.body;
+
+  //TODO: CHECK EMAIL AND PASSWORD IS VALID OR NOT
+  if (!(username || email) || !password) {
+    throw new ApiError(400, "USERNAME OR EMAIL AND PASSWORD IS REQUIRED");
+  }
+  //TODO: FIND USER IN DB
+  const user = await User.findOne({
+    $or: [{ username: username.toLowerCase() }, { email }],
+  });
+  if (!user) {
+    throw new ApiError(404, "USER NOT FOUND...");
+  }
+  //TODO: CHECK PASSWORD IS CORRECT OR NOT
+  const isPasswordValid = await user.isPasswordCorrect(password);
+  if (!isPasswordValid) {
+    throw new ApiError(401, "PASSWORD IS NOT CORRECT");
+  }
+  //TODO: GENERATE ACCESS TOKEN AND REFRESH TOKEN
+  const { acessToken, refreshToken } = await generateAcessAndRefreshToken(
+    user._id
+  );
+  //TODO: GET USER WITHOUT PASSWORD AND REFRESH TOKEN
+  const userLogedIn = await User.findById(user._id).select(
+    "-password -refreshToken"
+  );
+  //TODO: CREATE OPTIONS FOR COOKIE
+  const options = {
+    httpsOnly: true,
+    secure: true,
+  };
+  //TODO: SEND AS COOKIE TO USER
+  res
+    .status(200)
+    .cookie("acessToken", acessToken, options)
+    .cookie("refreshToken", refreshToken, options)
+    .json(
+      new ApiResponse(
+        200,
+        {
+          user: userLogedIn,
+          acessToken,
+          refreshToken,
+        },
+        "LOGIN SUCCESSFULLY"
+      )
+    );
+});
+const logoutUser = asyncHandler(async (req, res) => {
+  await User.findByIdAndUpdate(
+    req.user._id,
+    {
+      $set: {
+        refreshToken: undefined,
+      },
+    },
+    {
+      new: true,
+    }
+  );
+  const options = {
+    httpsOnly: true,
+    secure: true,
+  };
+  res
+    .status(200)
+    .clearCookie("acessToken", options)
+    .clearCookie("refreshToken", options)
+    .json(new ApiResponse(200, {}, "LOGOUT SUCCESSFULLY"));
+});
+export { userRegister, loginUser, logoutUser };
