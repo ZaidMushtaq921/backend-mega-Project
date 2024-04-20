@@ -34,17 +34,19 @@ const userRegister = asyncHandler(async (req, res) => {
   if (userExists) {
     throw new ApiError(409, "USER EMAIL OR USERNAME ALREADY EXISTS");
   }
-
+  console.log("user found");
   //TODO: CHECK AVATAR IS RECEIVED OR NOT {handling images}
   const avatarLocalPath = req.files?.avatar[0]?.path;
   const coverImageLocalPath = req.files?.coverImage[0]?.path;
   if (!avatarLocalPath) {
     throw new ApiError(400, "AVATAR IS REQUIRED");
   }
-
+  console.log("file path found");
   //TODO: UPLOAD  FILES ON CLOUDINARY
   const avatar = await uploadOnCloudinary(avatarLocalPath);
+  console.log("uploaded avatar");
   const coverImage = await uploadOnCloudinary(coverImageLocalPath);
+
   if (!avatar) {
     throw new ApiError(400, "AVATAR UPLOAD FAILED");
   }
@@ -87,16 +89,17 @@ const loginUser = asyncHandler(async (req, res) => {
   const generateAcessAndRefreshToken = async (userId) => {
     try {
       const user = await User.findById(userId);
-      const acessToken = user.generateAccessToken();
-      const refreshToken = user.generateRefreshToken();
+      const accessToken = await user.generateAccessToken();
+      const refreshToken = await user.generateRefreshToken();
 
-      user.refreshToken = refreshToken; // it will save in db
-      user.save({ validationBeforeSave: false }); // it will not validate the data before saving
+       user.refreshToken = refreshToken; // it will save in db
+     await user.save({ validationBeforeSave: false }); // it will not validate the data before saving
+     return { accessToken, refreshToken };
     } catch (error) {
       throw new ApiError(500, "INTERNAL SERVER ERROR: TOKEN ARE NOT GENERATED");
     }
 
-    return { acessToken, refreshToken };
+ 
   };
 
   //TODO:  GET USERNAME , EMAIL AND PASSWORD FROM REQUEST BODY
@@ -108,7 +111,7 @@ const loginUser = asyncHandler(async (req, res) => {
   }
   //TODO: FIND USER IN DB
   const user = await User.findOne({
-    $or: [{ username: username.toLowerCase() }, { email }],
+    $or: [{ username: username }, { email }],
   });
   if (!user) {
     throw new ApiError(404, "USER NOT FOUND...");
@@ -119,7 +122,7 @@ const loginUser = asyncHandler(async (req, res) => {
     throw new ApiError(401, "PASSWORD IS NOT CORRECT");
   }
   //TODO: GENERATE ACCESS TOKEN AND REFRESH TOKEN
-  const { acessToken, refreshToken } = await generateAcessAndRefreshToken(
+  const { accessToken, refreshToken } = await generateAcessAndRefreshToken(
     user._id
   );
   //TODO: GET USER WITHOUT PASSWORD AND REFRESH TOKEN
@@ -134,14 +137,14 @@ const loginUser = asyncHandler(async (req, res) => {
   //TODO: SEND AS COOKIE TO USER
   res
     .status(200)
-    .cookie("acessToken", acessToken, options)
+    .cookie("accessToken", accessToken, options)
     .cookie("refreshToken", refreshToken, options)
     .json(
       new ApiResponse(
         200,
         {
           user: userLogedIn,
-          acessToken,
+          accessToken,
           refreshToken,
         },
         "LOGIN SUCCESSFULLY"
@@ -166,7 +169,7 @@ const logoutUser = asyncHandler(async (req, res) => {
   };
   res
     .status(200)
-    .clearCookie("acessToken", options)
+    .clearCookie("accessToken", options)
     .clearCookie("refreshToken", options)
     .json(new ApiResponse(200, {}, "LOGOUT SUCCESSFULLY"));
 });

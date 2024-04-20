@@ -26,9 +26,9 @@ const uploadOnCloudinary = (localFilePath) => {
     });
 
     // Log the success message and the uploaded file's URL
-    // console.log("file uploaded sucessfully and url is ", result.url);
-    fs.unlinkSync(localFilePath);
-
+    console.log("file uploaded sucessfully and url is ", result);
+    // fs.unlinkSync(localFilePath);
+console.log("unlinked form main folder");
     // Return the result object
     return result;
   } catch (error) {
