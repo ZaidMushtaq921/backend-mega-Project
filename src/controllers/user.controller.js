@@ -3,6 +3,22 @@ import ApiError from "../utils/ApiError.js";
 import { User } from "../models/user.model.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
+import jwt from "jsonwebtoken";
+//TODO: METHOD TO GENERATE ACCESS TOKEN AND REFRESH TOKEN
+const generateAcessAndRefreshToken = async (userId) => {
+  try {
+    const user = await User.findById(userId);
+    const accessToken = await user.generateAccessToken();
+    const refreshToken = await user.generateRefreshToken();
+
+    user.refreshToken = refreshToken; // it will save in db
+    await user.save({ validationBeforeSave: false }); // it will not validate the data before saving
+    return { accessToken, refreshToken };
+  } catch (error) {
+    throw new ApiError(500, "INTERNAL SERVER ERROR: TOKEN ARE NOT GENERATED");
+  }
+};
+
 const userRegister = asyncHandler(async (req, res) => {
   /* TODO: 
  1. GET USER DETAILS FROM FRONTEND (POSTMAN)
@@ -85,22 +101,6 @@ const loginUser = asyncHandler(async (req, res) => {
   6. SEND AS COOKIE TO USER
   7. SEND RESPONSE TO USER
   */
-  //TODO: METHOD TO GENERATE ACCESS TOKEN AND REFRESH TOKEN
-  const generateAcessAndRefreshToken = async (userId) => {
-    try {
-      const user = await User.findById(userId);
-      const accessToken = await user.generateAccessToken();
-      const refreshToken = await user.generateRefreshToken();
-
-       user.refreshToken = refreshToken; // it will save in db
-     await user.save({ validationBeforeSave: false }); // it will not validate the data before saving
-     return { accessToken, refreshToken };
-    } catch (error) {
-      throw new ApiError(500, "INTERNAL SERVER ERROR: TOKEN ARE NOT GENERATED");
-    }
-
- 
-  };
 
   //TODO:  GET USERNAME , EMAIL AND PASSWORD FROM REQUEST BODY
   const { username, email, password } = req.body;
@@ -173,4 +173,47 @@ const logoutUser = asyncHandler(async (req, res) => {
     .clearCookie("refreshToken", options)
     .json(new ApiResponse(200, {}, "LOGOUT SUCCESSFULLY"));
 });
-export { userRegister, loginUser, logoutUser };
+const refreshAcessToken = asyncHandler(async (req, res) => {
+  const incommingRefreshToken =
+    req.cookies.refreshToken || req.body.refreshToken;
+
+  if (!incommingRefreshToken) {
+    throw new ApiError(401, "UNOTHARIZED REQUEST");
+  }
+  try {
+    const decodedToken = jwt.verify(
+      incommingRefreshToken,
+      process.env.REFRESH_TOKEN_SECRET
+    );
+    if (!decodedToken) {
+      throw new ApiError(401, "UNOTHARIZED REQUEST");
+    }
+    const user = await User.findById(decodedToken?._id);
+    if (!user) {
+      throw new ApiError(401, "INVALID REFRESH TOKEN");
+    }
+    if (incommingRefreshToken !== user?.refreshToken) {
+      throw new ApiError(401, "REFRESH TOKEN IS EXPIRED OR USED");
+    }
+    const { newAccessToken, newRefreshToken } =
+      await generateAcessAndRefreshToken(user._id);
+    const options = {
+      httpsOnly: true,
+      secure: true,
+    };
+    res
+      .status(200)
+      .cookie("accessToken", newAccessToken, options)
+      .cookie("refreshToken", newRefreshToken, options)
+      .json(
+        new ApiResponse(
+          200,
+          { acessToken: newAccessToken, refreshToken: newRefreshToken },
+          "ACESS TOKEN REFRESHED SUCESSFULLY"
+        )
+      );
+  } catch (error) {
+    throw new ApiError(401, error.message || "INVALID REFRESH TOKEN");
+  }
+});
+export { userRegister, loginUser, logoutUser,refreshAcessToken };
