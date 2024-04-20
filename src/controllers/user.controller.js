@@ -189,14 +189,17 @@ const refreshAcessToken = asyncHandler(async (req, res) => {
       throw new ApiError(401, "UNOTHARIZED REQUEST");
     }
     const user = await User.findById(decodedToken?._id);
+    // console.log(user);
     if (!user) {
       throw new ApiError(401, "INVALID REFRESH TOKEN");
     }
     if (incommingRefreshToken !== user?.refreshToken) {
       throw new ApiError(401, "REFRESH TOKEN IS EXPIRED OR USED");
     }
-    const { newAccessToken, newRefreshToken } =
+    const { accessToken: newAccessToken, refreshToken: newRefreshToken } =
       await generateAcessAndRefreshToken(user._id);
+    console.log("acesstoken: ", newAccessToken);
+    console.log("refreshtoken: ", newRefreshToken);
     const options = {
       httpsOnly: true,
       secure: true,
@@ -208,12 +211,12 @@ const refreshAcessToken = asyncHandler(async (req, res) => {
       .json(
         new ApiResponse(
           200,
-          { acessToken: newAccessToken, refreshToken: newRefreshToken },
-          "ACESS TOKEN REFRESHED SUCESSFULLY"
+          { accessToken: newAccessToken, refreshToken: newRefreshToken },
+          "ACCESS TOKEN REFRESHED SUCCESSFULLY"
         )
       );
   } catch (error) {
     throw new ApiError(401, error.message || "INVALID REFRESH TOKEN");
   }
 });
-export { userRegister, loginUser, logoutUser,refreshAcessToken };
+export { userRegister, loginUser, logoutUser, refreshAcessToken };

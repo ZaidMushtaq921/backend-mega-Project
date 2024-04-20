@@ -22,4 +22,4 @@ router.route("/logout").post( varifyJWT,logoutUser);
 router.route("/refresh-token").post(refreshAcessToken);
 
 export default router;
-// router.route("/register").post(upload.single("avatar"), userRegister);
+// router.route("/register").post(upload.single("avatar"), userRegister)
